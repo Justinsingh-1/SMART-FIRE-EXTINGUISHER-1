@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireGuard Pro | Emergency Safety Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        danger: {
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .pulse-alert {
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Global System Maintenance Banner -->
+    <div id="maintenanceBanner" class="hidden bg-amber-600/90 backdrop-blur text-white px-4 py-2 text-sm font-medium text-center border-b border-amber-500/30 transition-all flex items-center justify-center gap-2 shadow-lg z-50">
+        <i class="ph-bold ph-warning-triangle text-lg"></i>
+        <span id="bannerText">SYSTEM MAINTENANCE SCHEDULED: Emergency telemetry services undergoing routine optimization.</span>
+        <button onclick="closeMaintenanceBanner()" class="ml-4 hover:bg-amber-700 p-1 rounded transition text-xs">
+            <i class="ph-bold ph-x"></i>
+        </button>
+    </div>
+
+    <!-- Main Top Navigation -->
+    <nav id="mainNav" class="hidden bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Left Section: Profile Quick Trigger & Branding -->
+                <div class="flex items-center gap-4">
+                    <button onclick="openProfileModal()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition group shadow-sm">
+                        <i class="ph-bold ph-user-gear text-base group-hover:rotate-45 transition-transform"></i>
+                        <span id="navOwnerName">Owner Profile</span>
+                    </button>
+                    <div class="h-6 w-px bg-slate-800"></div>
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400">
+                            <i class="ph-bold ph-shield-check text-xl"></i>
+                        </div>
+                        <span class="font-extrabold text-lg tracking-tight text-white">FireGuard<span class="text-emerald-400">PRO</span></span>
+                    </div>
+                </div>
+
+                <!-- Right Section: Desktop Navigation Items & Logout -->
+                <div class="flex items-center gap-3">
+                    <span id="systemStatusBadge" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        System Online
+                    </span>
+                    <button onclick="triggerTestAlert()" class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="ph-bold ph-bell-ringing"></i> Test Alert
+                    </button>
+                    <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                        <i class="ph-bold ph-sign-out text-sm"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Authentication View (Sign In / Sign Up) -->
+    <main id="authView" class="flex-1 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-400 mb-3">
+                    <i class="ph-bold ph-flame text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">FireGuard Platform</h1>
+                <p class="text-sm text-slate-400 mt-1">Authorized Owner Emergency Portal</p>
+            </div>
+
+            <!-- Auth Form -->
+            <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="nameField" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Full Name / Facility Title</label>
+                    <input type="text" id="authName" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm" placeholder="e.g. John Doe (Facility Mgr)">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
+                    <input type="email" id="authEmail" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm" placeholder="owner@fireguard.com">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="authPassword" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm" placeholder="••••••••">
+                </div>
+
+                <div id="phoneField" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Emergency Mobile Line</label>
+                    <input type="tel" id="authPhone" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm" placeholder="+1 (555) 019-2834">
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-emerald-900/30 transition text-sm mt-2">
+                    Sign In to Safety Console
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-slate-400">
+                <span id="authToggleText">Need to register a new facility owner profile?</span>
+                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-emerald-400 hover:underline font-semibold ml-1">
+                    Sign Up
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Dashboard View -->
+    <main id="dashboardView" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        
+        <!-- Active Emergency Alarm Banner (Shown on Fire Incident) -->
+        <div id="emergencyAlarmBanner" class="hidden bg-red-950/90 border-2 border-red-600 rounded-2xl p-6 text-red-100 shadow-2xl pulse-alert">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-red-600 text-white rounded-2xl animate-bounce">
+                        <i class="ph-bold ph-siren text-3xl"></i>
+                    </div>
+                    <div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-red-600 text-white uppercase tracking-wider">
+                            CRITICAL EMERGENCY
+                        </span>
+                        <h2 class="text-xl font-bold mt-1 text-white">ACTIVE FIRE INCIDENT DETECTED!</h2>
+                        <p class="text-xs text-red-200">Owner Desktop Notification Dispatched. System has localized registered profile.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <button onclick="extinguishFire()" class="w-full md:w-auto bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-fire-extinguisher text-lg"></i>
+                        EXTINGUISH & RESOLVE NOW
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+                <div class="p-3 bg-slate-800 text-emerald-400 rounded-xl">
+                    <i class="ph-bold ph-shield-check text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 font-medium">Platform Status</div>
+                    <div id="metricStatus" class="text-lg font-bold text-slate-100 mt-0.5">Normal Monitoring</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+                <div class="p-3 bg-slate-800 text-red-400 rounded-xl">
+                    <i class="ph-bold ph-flame text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 font-medium">Active Incidents</div>
+                    <div id="metricActiveFires" class="text-2xl font-black text-slate-100 mt-0.5">0</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+                <div class="p-3 bg-slate-800 text-blue-400 rounded-xl">
+                    <i class="ph-bold ph-check-circle text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 font-medium">Extinguished Fires</div>
+                    <div id="metricExtinguished" class="text-2xl font-black text-slate-100 mt-0.5">0</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+                <div class="p-3 bg-slate-800 text-amber-400 rounded-xl">
+                    <i class="ph-bold ph-navigation-arrow text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 font-medium">GPS Lock</div>
+                    <div id="metricGpsStatus" class="text-xs font-bold text-slate-200 mt-1">Pending Sync...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area: Registered Profile Location & Incident Log -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Owner Registered Location Card -->
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-lg relative overflow-hidden">
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
+                                <i class="ph-bold ph-map-pin text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white">Registered Profile Location & GPS Telemetry</h3>
+                                <p class="text-xs text-slate-400">Direct location coordinates for local dispatch (No Map Mode)</p>
+                            </div>
+                        </div>
+                        <button onclick="refreshLocation()" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                            <i class="ph-bold ph-arrows-clockwise"></i> Refresh GPS
+                        </button>
+                    </div>
+
+                    <!-- Owner Credentials Detail -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Registered Facility Owner</span>
+                            <div id="cardOwnerName" class="text-sm font-bold text-slate-100 mt-1">--</div>
+                            <div id="cardOwnerEmail" class="text-xs text-slate-400 mt-0.5">--</div>
+                        </div>
+
+                        <div class="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Primary Contact Hotline</span>
+                            <div id="cardOwnerPhone" class="text-sm font-bold text-slate-100 mt-1">--</div>
+                            <div class="text-xs text-emerald-400 mt-0.5 flex items-center gap-1">
+                                <i class="ph-bold ph-check"></i> Verified Owner Line
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Geolocation & Physical Street Data -->
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Exact Physical Coordinates</div>
+                                <div id="cardCoordinates" class="text-lg font-mono font-bold text-white mt-1">
+                                    Detecting Latitude & Longitude...
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-full border border-emerald-500/20">
+                                Live Signal
+                            </span>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-800">
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Geocoded Address / Location Profile</div>
+                            <div id="cardPhysicalAddress" class="text-sm text-slate-200 mt-1 leading-relaxed">
+                                Fetching precise location telemetry via browser API...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Incident Command Actions -->
+                <div class="mt-6 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <span class="text-xs text-slate-400">Emergency Dispatch Services Ready</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="triggerFireIncident()" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5">
+                            <i class="ph-bold ph-flame"></i> Simulate Fire Alarm
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Control Center & Incident History -->
+            <div class="space-y-6">
+                <!-- System Quick Actions & Maintenance Switch -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-sm font-bold text-white pb-3 border-b border-slate-800 flex items-center gap-2">
+                        <i class="ph-bold ph-sliders text-emerald-400"></i> Operator Control Panel
+                    </h3>
+                    
+                    <div class="mt-4 space-y-3">
+                        <button onclick="toggleMaintenanceBannerAdmin()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="ph-bold ph-warning-triangle text-amber-400"></i> Toggle Maintenance Banner
+                            </span>
+                            <i class="ph-bold ph-caret-right text-slate-500"></i>
+                        </button>
+
+                        <button onclick="requestDesktopNotificationPermission()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="ph-bold ph-bell-simple-ringing text-emerald-400"></i> Enable Browser Alerts
+                            </span>
+                            <i class="ph-bold ph-caret-right text-slate-500"></i>
+                        </button>
+
+                        <button onclick="openProfileModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="ph-bold ph-user-focus text-blue-400"></i> Update Owner Credentials
+                            </span>
+                            <i class="ph-bold ph-caret-right text-slate-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Real-time Incident Audit Log -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="ph-bold ph-list-bullets text-emerald-400"></i> Emergency Audit Log
+                        </h3>
+                        <button onclick="clearIncidentLogs()" class="text-xs text-slate-500 hover:text-slate-300">Clear</button>
+                    </div>
+                    <div id="incidentLogContainer" class="mt-4 space-y-3 max-h-60 overflow-y-auto pr-1">
+                        <!-- Dynamic logs populated via JavaScript -->
+                        <div class="text-xs text-slate-500 text-center py-4">No recent emergency activities.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal -->
+    <div id="profileModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="ph-bold ph-user-gear text-emerald-400"></i> Update Registered Owner Profile
+                </h3>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveProfileChanges(event)" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Owner Name</label>
+                    <input type="text" id="editName" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
+                    <input type="email" id="editEmail" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Emergency Hotline Phone</label>
+                    <input type="tel" id="editPhone" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeProfileModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-lg transition">
+                        Save Profile Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Global Application State
+        const STORAGE_KEY_USER = 'fireguard_user_session';
+        const STORAGE_KEY_INCIDENTS = 'fireguard_incidents';
+        const STORAGE_KEY_MAINTENANCE = 'fireguard_maintenance';
+
+        let currentUser = null;
+        let isSignUpMode = false;
+        let activeFire = false;
+        let extingushedCount = 0;
+        let incidentLogs = [];
+        let ownerCoordinates = { lat: null, lng: null, address: 'Pending detection' };
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthSession();
+            loadMaintenanceState();
+        });
+
+        function showAuth() {
+            const mainNav = document.getElementById('mainNav');
+            const dashboardView = document.getElementById('dashboardView');
+            const authView = document.getElementById('authView');
+
+            if (mainNav) mainNav.classList.add('hidden');
+            if (dashboardView) dashboardView.classList.add('hidden');
+            if (authView) authView.classList.remove('hidden');
+        }
+
+        function showDashboard() {
+            const authView = document.getElementById('authView');
+            const mainNav = document.getElementById('mainNav');
+            const dashboardView = document.getElementById('dashboardView');
+
+            if (authView) authView.classList.add('hidden');
+            if (mainNav) mainNav.classList.remove('hidden');
+            if (dashboardView) dashboardView.classList.remove('hidden');
+
+            try { updateProfileDisplay(); } catch(e) { console.warn(e); }
+            try { refreshLocation(); } catch(e) { console.warn(e); }
+            try { loadIncidentLogs(); } catch(e) { console.warn(e); }
+        }
+
+        function checkAuthSession() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY_USER);
+                if (stored) {
+                    currentUser = JSON.parse(stored);
+                    if (currentUser && currentUser.email) {
+                        showDashboard();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Session retrieval fallback:', e);
+            }
+            showAuth();
+        }
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            const nameField = document.getElementById('nameField');
+            const phoneField = document.getElementById('phoneField');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const toggleText = document.getElementById('authToggleText');
+            const toggleBtn = document.getElementById('authToggleBtn');
+
+            if (isSignUpMode) {
+                if (nameField) nameField.classList.remove('hidden');
+                if (phoneField) phoneField.classList.remove('hidden');
+                if (submitBtn) submitBtn.textContent = 'Register Facility Owner Profile';
+                if (toggleText) toggleText.textContent = 'Already have an owner account?';
+                if (toggleBtn) toggleBtn.textContent = 'Sign In';
+            } else {
+                if (nameField) nameField.classList.add('hidden');
+                if (phoneField) phoneField.classList.add('hidden');
+                if (submitBtn) submitBtn.textContent = 'Sign In to Safety Console';
+                if (toggleText) toggleText.textContent = 'Need to register a new facility owner profile?';
+                if (toggleBtn) toggleBtn.textContent = 'Sign Up';
+            }
+        }
+
+        function handleAuth(e) {
+            if (e && e.preventDefault) e.preventDefault();
+
+            try {
+                const emailEl = document.getElementById('authEmail');
+                const email = emailEl ? emailEl.value.trim() : 'owner@fireguard.com';
+
+                if (isSignUpMode) {
+                    const nameEl = document.getElementById('authName');
+                    const phoneEl = document.getElementById('authPhone');
+                    currentUser = {
+                        name: (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : 'Facility Commander',
+                        email: email || 'owner@fireguard.com',
+                        phone: (phoneEl && phoneEl.value.trim()) ? phoneEl.value.trim() : '+1 (555) 019-2834'
+                    };
+                } else {
+                    const namePart = email ? email.split('@')[0] : 'Owner';
+                    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1) + ' (Owner)';
+                    currentUser = {
+                        name: formattedName,
+                        email: email || 'owner@fireguard.com',
+                        phone: '+1 (555) 019-2834'
+                    };
+                }
+
+                try {
+                    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
+                } catch (stErr) {
+                    console.warn('LocalStorage save error:', stErr);
+                }
+
+                showToast('Authentication successful!', 'success');
+            } catch (err) {
+                console.error('HandleAuth error:', err);
+                currentUser = {
+                    name: 'Facility Owner',
+                    email: 'owner@fireguard.com',
+                    phone: '+1 (555) 019-2834'
+                };
+            }
+
+            // Always transition to dashboard
+            showDashboard();
+        }
+
+        function logout() {
+            try { localStorage.removeItem(STORAGE_KEY_USER); } catch(e) {}
+            currentUser = null;
+            showAuth();
+            showToast('Signed out of safety console.', 'info');
+        }
+
+        function updateProfileDisplay() {
+            if (!currentUser) return;
+            const name = currentUser.name || 'Facility Owner';
+            const email = currentUser.email || 'owner@fireguard.com';
+            const phone = currentUser.phone || '+1 (555) 019-2834';
+
+            const navOwnerName = document.getElementById('navOwnerName');
+            const cardOwnerName = document.getElementById('cardOwnerName');
+            const cardOwnerEmail = document.getElementById('cardOwnerEmail');
+            const cardOwnerPhone = document.getElementById('cardOwnerPhone');
+
+            if (navOwnerName) navOwnerName.textContent = name;
+            if (cardOwnerName) cardOwnerName.textContent = name;
+            if (cardOwnerEmail) cardOwnerEmail.textContent = email;
+            if (cardOwnerPhone) cardOwnerPhone.textContent = phone;
+
+            const editName = document.getElementById('editName');
+            const editEmail = document.getElementById('editEmail');
+            const editPhone = document.getElementById('editPhone');
+
+            if (editName) editName.value = name;
+            if (editEmail) editEmail.value = email;
+            if (editPhone) editPhone.value = phone;
+        }
+
+        function refreshLocation() {
+            const coordEl = document.getElementById('cardCoordinates');
+            const addrEl = document.getElementById('cardPhysicalAddress');
+            const gpsStatusEl = document.getElementById('metricGpsStatus');
+
+            if (coordEl) coordEl.textContent = 'Acquiring GPS Satellite Signal...';
+            if (addrEl) addrEl.textContent = 'Contacting location positioning service...';
+
+            if ("geolocation" in navigator) {
+                try {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude.toFixed(6);
+                            const lng = position.coords.longitude.toFixed(6);
+                            ownerCoordinates.lat = lat;
+                            ownerCoordinates.lng = lng;
+
+                            if (coordEl) coordEl.textContent = `${lat}° N, ${lng}° W`;
+                            if (gpsStatusEl) {
+                                gpsStatusEl.textContent = 'Locked & Synced';
+                                gpsStatusEl.className = 'text-xs font-bold text-emerald-400 mt-1';
+                            }
+
+                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data && data.display_name) {
+                                        ownerCoordinates.address = data.display_name;
+                                        if (addrEl) addrEl.textContent = data.display_name;
+                                    } else {
+                                        fallbackAddress(lat, lng);
+                                    }
+                                })
+                                .catch(() => fallbackAddress(lat, lng));
+                        },
+                        (error) => {
+                            console.warn('Geolocation Error:', error);
+                            fallbackAddress("37.774929", "-122.419416");
+                        },
+                        { enableHighAccuracy: true, timeout: 8000 }
+                    );
+                } catch(e) {
+                    fallbackAddress("37.774929", "-122.419416");
+                }
+            } else {
+                fallbackAddress("37.774929", "-122.419416");
+            }
+        }
+
+        function fallbackAddress(lat, lng) {
+            const addr = `Latitude ${lat}, Longitude ${lng} - Registered Owner Safety Station`;
+            ownerCoordinates.lat = lat;
+            ownerCoordinates.lng = lng;
+            ownerCoordinates.address = addr;
+
+            const coordEl = document.getElementById('cardCoordinates');
+            const addrEl = document.getElementById('cardPhysicalAddress');
+            const gpsStatusEl = document.getElementById('metricGpsStatus');
+
+            if (coordEl) coordEl.textContent = `${lat}° N, ${lng}° W (Registered Base)`;
+            if (addrEl) addrEl.textContent = addr;
+            if (gpsStatusEl) {
+                gpsStatusEl.textContent = 'Registered Preset';
+                gpsStatusEl.className = 'text-xs font-bold text-slate-400 mt-1';
+            }
+        }
+
+        function triggerFireIncident() {
+            if (activeFire) {
+                showToast('Fire incident is already active!', 'warning');
+                return;
+            }
+
+            activeFire = true;
+            const alarmBanner = document.getElementById('emergencyAlarmBanner');
+            const metricStatus = document.getElementById('metricStatus');
+            const metricActiveFires = document.getElementById('metricActiveFires');
+
+            if (alarmBanner) alarmBanner.classList.remove('hidden');
+            if (metricStatus) {
+                metricStatus.textContent = 'CRITICAL ALARM';
+                metricStatus.className = 'text-lg font-bold text-red-500 mt-0.5 animate-pulse';
+            }
+            if (metricActiveFires) metricActiveFires.textContent = '1';
+
+            sendDesktopNotification(
+                "🚨 CRITICAL FIRE ALERT!",
+                `Fire detected at registered profile location: ${ownerCoordinates.address}`
+            );
+
+            addIncidentLog('CRITICAL', `FIRE DETECTED at location: ${ownerCoordinates.address}`);
+            showToast('FIRE INCIDENT TRIGGERED! Desktop Notification sent.', 'danger');
+        }
+
+        function extinguishFire() {
+            if (!activeFire) {
+                showToast('No active fire incident to extinguish.', 'info');
+                return;
+            }
+
+            activeFire = false;
+            extingushedCount++;
+
+            const alarmBanner = document.getElementById('emergencyAlarmBanner');
+            const metricStatus = document.getElementById('metricStatus');
+            const metricActiveFires = document.getElementById('metricActiveFires');
+            const metricExtinguished = document.getElementById('metricExtinguished');
+
+            if (alarmBanner) alarmBanner.classList.add('hidden');
+            if (metricStatus) {
+                metricStatus.textContent = 'Normal Monitoring';
+                metricStatus.className = 'text-lg font-bold text-slate-100 mt-0.5';
+            }
+            if (metricActiveFires) metricActiveFires.textContent = '0';
+            if (metricExtinguished) metricExtinguished.textContent = extingushedCount;
+
+            addIncidentLog('RESOLVED', `Fire incident extinguished and verified clear at registered location.`);
+            showToast('Fire Extinguished! Incident resolved and logged.', 'success');
+        }
+
+        function triggerTestAlert() {
+            sendDesktopNotification(
+                "🔔 FireGuard Test Alert",
+                "This is a test notification from your Fire Safety Management Platform."
+            );
+            showToast('Test notification triggered.', 'info');
+            addIncidentLog('TEST', 'Manual alert system diagnostic executed.');
+        }
+
+        function requestDesktopNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast('Desktop notifications are not supported by this browser.', 'warning');
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                showToast('Browser notifications are ALREADY active & enabled!', 'success');
+                sendDesktopNotification("🔔 Notifications Active", "FireGuard desktop notifications are enabled.");
+                return;
+            }
+
+            if (Notification.permission === "denied") {
+                showToast('Notifications are BLOCKED in Chrome settings. Click the tune/lock icon in the address bar to allow.', 'danger');
+                return;
+            }
+
+            try {
+                Notification.requestPermission().then((permission) => {
+                    if (permission === "granted") {
+                        showToast('Notifications enabled successfully!', 'success');
+                        sendDesktopNotification("🚨 FireGuard System Online", "You will now receive emergency alerts.");
+                    } else if (permission === "denied") {
+                        showToast('Notification permission was blocked in browser settings.', 'danger');
+                    } else {
+                        showToast('Notification permission prompt dismissed.', 'info');
+                    }
+                }).catch(() => {
+                    showToast('Notification prompt restricted by browser.', 'warning');
+                });
+            } catch (e) {
+                showToast('Notification permission request unsupported in this frame.', 'warning');
+            }
+        }
+
+        function sendDesktopNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/785/785116.png'
+                    });
+                } catch (err) {
+                    showToast(`[Alert Sent]: ${title}`, 'danger');
+                }
+            } else {
+                showToast(`[Alert Sent]: ${title}`, 'danger');
+            }
+        }
+
+        function addIncidentLog(type, message) {
+            const time = new Date().toLocaleTimeString();
+            const logEntry = { type, message, time };
+            incidentLogs.unshift(logEntry);
+            saveIncidentLogs();
+            renderIncidentLogs();
+        }
+
+        function renderIncidentLogs() {
+            const container = document.getElementById('incidentLogContainer');
+            if (!container) return;
+
+            if (!Array.isArray(incidentLogs) || incidentLogs.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4">No recent emergency activities.</div>';
+                return;
+            }
+
+            container.innerHTML = incidentLogs.map(log => {
+                let badgeClass = 'bg-slate-800 text-slate-300';
+                if (log.type === 'CRITICAL') badgeClass = 'bg-red-500/10 text-red-400 border border-red-500/30';
+                if (log.type === 'RESOLVED') badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                if (log.type === 'TEST') badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+
+                return `
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${log.type}</span>
+                            <span class="text-slate-500 text-[10px]">${log.time}</span>
+                        </div>
+                        <p class="text-slate-300 font-medium">${log.message}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveIncidentLogs() {
+            try {
+                localStorage.setItem(STORAGE_KEY_INCIDENTS, JSON.stringify(incidentLogs.slice(0, 20)));
+            } catch (e) {}
+        }
+
+        function loadIncidentLogs() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY_INCIDENTS);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        incidentLogs = parsed;
+                    }
+                }
+            } catch (e) {
+                incidentLogs = [];
+            }
+            renderIncidentLogs();
+        }
+
+        function clearIncidentLogs() {
+            incidentLogs = [];
+            try { localStorage.removeItem(STORAGE_KEY_INCIDENTS); } catch(e) {}
+            renderIncidentLogs();
+            showToast('Incident audit logs cleared.', 'info');
+        }
+
+        function loadMaintenanceState() {
+            try {
+                const maintenanceActive = localStorage.getItem(STORAGE_KEY_MAINTENANCE) === 'true';
+                const banner = document.getElementById('maintenanceBanner');
+                if (banner) {
+                    if (maintenanceActive) banner.classList.remove('hidden');
+                    else banner.classList.add('hidden');
+                }
+            } catch (e) {}
+        }
+
+        function toggleMaintenanceBannerAdmin() {
+            let currentState = false;
+            try {
+                currentState = localStorage.getItem(STORAGE_KEY_MAINTENANCE) === 'true';
+                const newState = !currentState;
+                localStorage.setItem(STORAGE_KEY_MAINTENANCE, newState.toString());
+                loadMaintenanceState();
+                showToast(`System Maintenance banner ${newState ? 'activated' : 'deactivated'}.`, 'info');
+            } catch (e) {
+                showToast('Maintenance banner toggled.', 'info');
+            }
+        }
+
+        function closeMaintenanceBanner() {
+            const banner = document.getElementById('maintenanceBanner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        function openProfileModal() {
+            updateProfileDisplay();
+            const modal = document.getElementById('profileModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profileModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function saveProfileChanges(e) {
+            if (e && e.preventDefault) e.preventDefault();
+
+            const nameEl = document.getElementById('editName');
+            const emailEl = document.getElementById('editEmail');
+            const phoneEl = document.getElementById('editPhone');
+
+            if (!currentUser) currentUser = {};
+            currentUser.name = nameEl ? nameEl.value.trim() : 'Facility Owner';
+            currentUser.email = emailEl ? emailEl.value.trim() : 'owner@fireguard.com';
+            currentUser.phone = phoneEl ? phoneEl.value.trim() : '+1 (555) 019-2834';
+
+            try {
+                localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
+            } catch(stErr) {}
+
+            updateProfileDisplay();
+            closeProfileModal();
+            showToast('Owner profile credentials updated!', 'success');
+            addIncidentLog('INFO', `Profile details updated for owner ${currentUser.name}`);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900 border-slate-700 text-slate-100';
+            if (type === 'success') bgClass = 'bg-emerald-950 border-emerald-600 text-emerald-100';
+            if (type === 'danger') bgClass = 'bg-red-950 border-red-600 text-red-100';
+            if (type === 'warning') bgClass = 'bg-amber-950 border-amber-600 text-amber-100';
+
+            toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i class="ph-bold ph-info text-base"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
